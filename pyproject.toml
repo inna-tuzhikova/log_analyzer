@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "log-analyzer"
+version = "0.1.0"
+description = "Homework project #1 for OTUS Python Developer. Professional"
+authors = ["inna-tuzhikova <inna-tuzhikova@github.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "log_analyzer"}]
+
+[tool.poetry.dependencies]
+python = "3.10.11"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
