@@ -1,53 +1,88 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from functools import update_wrapper
+from functools import update_wrapper, reduce
+from typing import Callable
 
 
-def disable():
-    '''
+def disable(fun: Callable):
+    """
     Disable a decorator by re-assigning the decorator's name
     to this function. For example, to turn off memoization:
 
     >>> memo = disable
 
-    '''
-    return
+    """
+    return fun
 
 
-def decorator():
-    '''
+def decorator(decorator_fun: Callable):
+    """
     Decorate a decorator so that it inherits the docstrings
     and stuff from the function it's decorating.
-    '''
-    return
+    """
+    def decorator_wrapper(fun):
+        wrapper = decorator_fun(fun)
+        return update_wrapper(wrapper=wrapper, wrapped=fun)
+
+    return update_wrapper(wrapper=decorator_wrapper, wrapped=decorator_fun)
 
 
-def countcalls():
-    '''Decorator that counts calls made to the function decorated.'''
-    return
+@decorator
+def countcalls(fun: Callable):
+    """Decorator that counts calls made to the function decorated."""
+
+    def wrapper(*args, **kwargs):
+        wrapper.calls += 1
+        return fun(*args, **kwargs)
+
+    wrapper.calls = 0
+    return wrapper
 
 
-def memo():
-    '''
+@decorator
+def memo(fun: Callable):
+    """
     Memoize a function so that it caches all return values for
     faster future lookups.
-    '''
-    return
+    """
+    cached = {}
+
+    def get_args_key(args, kwargs) -> tuple:
+        return *args, *kwargs.items()
+
+    def wrapper(*args, **kwargs):
+        key = get_args_key(args, kwargs)
+        if key not in cached:
+            cached[key] = fun(*args, **kwargs)
+        return cached[key]
+
+    return wrapper
 
 
-def n_ary():
-    '''
+@decorator
+def n_ary(fun: Callable):
+    """
     Given binary function f(x, y), return an n_ary function such
     that f(x, y, z) = f(x, f(y,z)), etc. Also allow f(x) = x.
-    '''
-    return
+    """
+    def wrapper(*args):
+        if len(args) == 0:
+            raise ValueError(f'{fun.__name__} accepts at least one arg')
+        if len(args) == 1:
+            return args[0]
+        elif len(args) == 2:
+            return fun(*args)
+        else:
+            return reduce(fun, args)
+
+    return wrapper
 
 
-def trace():
-    '''Trace calls made to function decorated.
+def trace(tab: str):
+    """Trace calls made to function decorated.
 
-    @trace("____")
+    @trace('____')
     def fib(n):
         ....
 
@@ -63,12 +98,29 @@ def trace():
     ____ <-- fib(1) == 1
      <-- fib(3) == 3
 
-    '''
-    return
+    """
+
+    prefix = ['']
+
+    def args_to_str(args, kwargs):
+        return ', '.join(map(str, args))
+
+    @decorator
+    def wrapped_decorator(fun: Callable):
+        def wrapped(*args, **kwargs):
+            args_str = args_to_str(args, kwargs)
+            print(f'{prefix[0]} --> {fun.__name__}({args_str})')
+            prefix[0] += tab
+            result = fun(*args, **kwargs)
+            prefix[0] = prefix[0][:-len(tab)]
+            print(f'{prefix[0]} <-- {fun.__name__}({args_str}) == {result}')
+            return result
+        return wrapped
+    return wrapped_decorator
 
 
-@memo
 @countcalls
+@memo
 @n_ary
 def foo(a, b):
     return a + b
@@ -82,7 +134,7 @@ def bar(a, b):
 
 
 @countcalls
-@trace("####")
+@trace('####')
 @memo
 def fib(n):
     """Some doc"""
@@ -93,12 +145,12 @@ def main():
     print(foo(4, 3))
     print(foo(4, 3, 2))
     print(foo(4, 3))
-    print("foo was called", foo.calls, "times")
+    print('foo was called', foo.calls, 'times')
 
     print(bar(4, 3))
     print(bar(4, 3, 2))
     print(bar(4, 3, 2, 1))
-    print("bar was called", bar.calls, "times")
+    print('bar was called', bar.calls, 'times')
 
     print(fib.__doc__)
     fib(3)
