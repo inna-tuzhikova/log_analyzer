@@ -29,7 +29,9 @@
 # Можно свободно определять свои функции и т.п.
 # -----------------
 
-from itertools import combinations
+from itertools import combinations, product
+from collections.abc import Generator
+
 
 RANK_MAP = {
     '2': 2,
@@ -46,8 +48,11 @@ RANK_MAP = {
     'K': 13,
     'A': 14
 }
-
-SUITS = ['C', 'S', 'H', 'D']
+RED_JOKER = '?R'
+BLACK_JOKER = '?B'
+JOKERS = [RED_JOKER, BLACK_JOKER]
+CLUBS, SPADES, HEARTS, DIAMONDS = 'C', 'S', 'H', 'D'
+SUITS = [CLUBS, SPADES, HEARTS, DIAMONDS]
 
 
 def hand_rank(hand: list[str]) -> tuple:
@@ -134,6 +139,27 @@ def two_pair(ranks: list[int]) -> tuple[int, int] | None:
     return result
 
 
+def get_joker_replaces(joker: str, used_cards) -> Generator[str, None, None]:
+    if joker == RED_JOKER:
+        suits = [HEARTS, DIAMONDS]
+    elif joker == BLACK_JOKER:
+        suits = [CLUBS, SPADES]
+    else:
+        raise ValueError(f'Unknown joker: {joker}')
+    for rank, suit in product(RANK_MAP.keys(), suits):
+        card = f'{rank}{suit}'
+        if card not in used_cards:
+            yield card
+
+
+def get_red_joker_cards(used_cards: list[str]) -> Generator[str, None, None]:
+    return get_joker_replaces(RED_JOKER, used_cards)
+
+
+def get_black_joker_cards(used_cards: list[str]) -> Generator[str, None, None]:
+    return get_joker_replaces(BLACK_JOKER, used_cards)
+
+
 def prepare_hand(hand: list[str]) -> list[str]:
     return list(map(prepare_card, hand))
 
@@ -147,14 +173,17 @@ def prepare_card(card: str) -> str:
     card = card.upper()
     if len(card) != 2:
         raise ValueError(f'Card should have 2 letters, got `{card}`')
-    if card[0] not in RANK_MAP.keys():
-        raise ValueError(
-            f'Unknown rank: `{card}`. Possible ranks: {list(RANK_MAP.keys())}'
-        )
-    if card[1] not in SUITS:
-        raise ValueError(
-            f'Unknown suit: `{card}`. Possible ranks: {SUITS}'
-        )
+
+    if card not in JOKERS:
+        if card[0] not in RANK_MAP.keys():
+            raise ValueError(
+                f'Unknown rank: `{card}`. '
+                f'Possible ranks: {list(RANK_MAP.keys())}'
+            )
+        if card[1] not in SUITS:
+            raise ValueError(
+                f'Unknown suit: `{card}`. Possible ranks: {SUITS}'
+            )
     return card
 
 
@@ -174,7 +203,25 @@ def best_hand(hand: list[str]) -> list[str]:
 def best_wild_hand(hand: list[str]) -> list[str]:
     """best_hand но с джокерами"""
     hand = prepare_hand(hand)
-    return []
+    best_score = ()
+    result = []
+    for possible_hand in combinations(hand, 5):
+        possible_hand = list(possible_hand)
+        cards_options = []
+        if RED_JOKER in possible_hand:
+            possible_hand.remove(RED_JOKER)
+            cards_options.append(get_red_joker_cards(possible_hand))
+        if BLACK_JOKER in possible_hand:
+            possible_hand.remove(BLACK_JOKER)
+            cards_options.append(get_black_joker_cards(possible_hand))
+        cards_options.insert(0, [possible_hand])
+        for cards in product(*cards_options):
+            cards = [*cards[0], *cards[1:]]
+            score = hand_rank(cards)
+            if score > best_score:
+                best_score = score
+                result = cards
+    return result
 
 
 def test_best_hand() -> None:
@@ -201,4 +248,4 @@ def test_best_wild_hand() -> None:
 
 if __name__ == '__main__':
     test_best_hand()
-    # test_best_wild_hand()
+    test_best_wild_hand()
