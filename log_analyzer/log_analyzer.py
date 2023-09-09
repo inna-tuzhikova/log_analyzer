@@ -1,21 +1,82 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Input: nginx log directory
+Output: html report with url request time statistics
+"""
+import logging
+from argparse import ArgumentParser
+from pathlib import Path
 
-# log_format ui_short '$remote_addr  $remote_user $http_x_real_ip [$time_local] "$request" '
-#                     '$status $body_bytes_sent "$http_referer" '
-#                     '"$http_user_agent" "$http_x_forwarded_for" "$http_X_REQUEST_ID" "$http_X_RB_USER" '  
-#                     '$request_time';
-
-config = {
-    "REPORT_SIZE": 1000,
-    "REPORT_DIR": "./reports",
-    "LOG_DIR": "./log"
-}
+from report import (
+    prepare_config,
+    Config,
+    find_log,
+    get_report_path,
+    read_log,
+    build_report,
+    init_logging
+)
 
 
 def main():
-    pass
+    try:
+        config_path = parse_args()
+    except FileNotFoundError as e:
+        print(f'Exiting program, reason: {e}')
+        exit(1)
+    try:
+        config = prepare_config(config_path)
+    except Exception as e:
+        print(f'Unable to read `{config_path.absolute()}`: {e}')
+        exit(1)
 
-if __name__ == "__main__":
+    init_logging(config)
+    logger = logging.getLogger(__name__)
+    logger.info('Start')
+
+    try:
+        analyze_logs(config)
+    except:
+        logger.exception('Error during analyzing logs...')
+        exit(1)
+    else:
+        logging.getLogger(__name__).info('DONE!')
+
+
+def parse_args() -> Path | None:
+    parser = ArgumentParser('Script analyzing nginx logs')
+    parser.add_argument(
+        '--config', type=Path, default=Path('data/config.json'),
+        help='Path to json file with script options: '
+             'REPORT SIZE, REPORT_DIR, LOG_DIR, SCRIPT_LOG_PATH'
+    )
+    args = parser.parse_args()
+    if args.config is not None and not args.config.is_file():
+        raise FileNotFoundError(
+            f'Cannot find config path: `{args.config.absolute()}`'
+        )
+
+    return args.config
+
+
+def analyze_logs(config: Config) -> None:
+    logger = logging.getLogger(__name__)
+    log = find_log(config)
+    if log is None:
+        logger.info('There is no logs to report!')
+        return
+    report_path = get_report_path(log, config)
+    if report_path.is_file():
+        logger.info(
+            'Report for %s is already built: `%s`',
+            log.date, report_path.absolute()
+        )
+        return
+    build_report(read_log(log), report_path, config)
+    logger.info('Saved to `%s`', report_path.absolute())
+
+
+if __name__ == '__main__':
     main()

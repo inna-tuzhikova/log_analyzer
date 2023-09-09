@@ -1,0 +1,7 @@
+{
+    "REPORT_SIZE": 1000,
+    "REPORT_DIR": "/path/to/output/reports/dir",
+    "LOG_DIR": "/path/to/input/logs/dir",
+    "MAX_ERROR_RATE": 0.05,
+    "SCRIPT_LOG_PATH": "/path/to/save/log/file"
+}

@@ -1,1 +1,4 @@
 .idea
+/data/logs
+/data/reports
+/data/config.json
