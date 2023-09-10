@@ -8,8 +8,7 @@ from string import Template
 from typing import Generator
 
 from .config import Config
-from .fs import save_report, get_report_template
-
+from .fs import get_report_template, save_report
 
 URLStat = namedtuple('URLStat', ['url', 'request_time_sec'])
 log_record_fmt = re.compile(
@@ -69,7 +68,9 @@ def build_report(
         key=lambda x: sum(x[1]),
         reverse=True
     )[:config.report_size]
-    table = prepare_table(filtered_stat, total_requests, total_request_time_sec)
+    table = prepare_table(
+        filtered_stat, total_requests, total_request_time_sec
+    )
     report_content = render_table(table)
     save_report(report_content, report_path)
 

@@ -2,7 +2,6 @@ import json
 from collections import namedtuple
 from pathlib import Path
 
-
 DEFAULT_CONFIG_DICT = {
     'REPORT_SIZE': 1000,
     'REPORT_DIR': './data/reports',

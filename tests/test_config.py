@@ -1,6 +1,6 @@
 import unittest
 
-from log_analyzer.report import prepare_config, Config
+from log_analyzer.report import Config, prepare_config
 
 
 class ConfigTest(unittest.TestCase):

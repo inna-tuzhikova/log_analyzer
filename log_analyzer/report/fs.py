@@ -7,7 +7,6 @@ from typing import Generator
 
 from .config import Config
 
-
 Log = namedtuple('Log', ['path', 'date'])
 log_name_rexp = re.compile(r'^nginx-access-ui\.log-(?P<date>\d{8})(\.gz)?$')
 

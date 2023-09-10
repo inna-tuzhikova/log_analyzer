@@ -10,13 +10,13 @@ from argparse import ArgumentParser
 from pathlib import Path
 
 from report import (
-    prepare_config,
     Config,
+    build_report,
     find_log,
     get_report_path,
+    init_logging,
+    prepare_config,
     read_log,
-    build_report,
-    init_logging
 )
 
 
