@@ -1,4 +1,5 @@
 import gzip
+import logging
 import re
 from collections import namedtuple
 from datetime import date
@@ -9,6 +10,7 @@ from .config import Config
 
 Log = namedtuple('Log', ['path', 'date'])
 log_name_rexp = re.compile(r'^nginx-access-ui\.log-(?P<date>\d{8})(\.gz)?$')
+logger = logging.getLogger(__name__)
 
 
 def find_log(config: Config) -> Log | None:
@@ -58,9 +60,14 @@ def get_report_path(log: Log, config: Config) -> Path:
 def read_log(log: Log) -> Generator[list[str], None, None]:
     """Iterator reading log file line by line"""
     opener = gzip.open if log.path.suffix == '.gz' else open
-    with opener(log.path, 'rt') as f:
-        for line in f:
-            yield line
+    try:
+        with opener(log.path, 'rt') as f:
+            for line in f:
+                yield line
+    except IOError as e:
+        # It will be caught further, so no traceback here
+        logger.info('Unable to read `%s`', log.path)
+        raise e
 
 
 def save_report(report_content: str, report_path: Path) -> None:
