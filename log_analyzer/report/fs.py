@@ -72,13 +72,21 @@ def read_log(log: Log) -> Generator[list[str], None, None]:
 
 def save_report(report_content: str, report_path: Path) -> None:
     """Saves report content as a file with specified filename"""
-    with open(report_path, 'w') as f:
-        f.write(report_content)
+    try:
+        with open(report_path, 'w') as f:
+            f.write(report_content)
+    except IOError as e:
+        logger.info('Unable to save report `%s`', report_path)
+        raise e
 
 
 def get_report_template() -> str:
     """Returns string representation of html template for cooking report"""
     path = Path(__file__).parent / 'template.html'
-    with open(path, 'r') as f:
-        content = f.read()
+    try:
+        with open(path, 'r') as f:
+            content = f.read()
+    except IOError as e:
+        logger.info('Unable to load report template `%s`', path)
+        raise e
     return content
